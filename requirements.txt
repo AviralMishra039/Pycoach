@@ -1,0 +1,22 @@
+# --- Core Frameworks (FastAPI/Streamlit) ---
+fastapi
+uvicorn[standard]
+streamlit
+requests
+python-dotenv
+pandas  
+# --- LangChain Core and Integrations ---
+langchain==0.1.0  # Kept at 0.1.0 to avoid mass rewriting due to import changes
+langchain-community
+langchain-google-genai
+langchain-core
+
+# --- RAG Components (Embeddings & Vector Store) ---
+chromadb
+sentence-transformers  
+torch                  
+transformers           
+numpy<2,>=1.26.4       
+pydantic<2.0           
+typing-extensions      
+

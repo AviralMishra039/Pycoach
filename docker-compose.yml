@@ -1,0 +1,73 @@
+# docker-compose.yml
+version: '3.8'
+
+services:
+  # ----------------------------------------------------
+  # 1. Ollama Service (Required for Local LLM Option)
+  # ----------------------------------------------------
+  ollama:
+    # Official Ollama image
+    image: ollama/ollama
+    # Default Ollama port to the host machine
+    ports:
+      - "11434:11434"
+    # Mount volume for models to persist across restarts
+    volumes:
+      - ollama_models:/root/.ollama
+    # Command to ensure Llama 3 is available on startup 
+    # NOTE: This downloads the model the first time!
+    command: ["/bin/bash", "-c", "ollama pull llama3 && ollama serve"]
+    # Ensure this service starts first
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+  
+  # ----------------------------------------------------
+  # 2. FastAPI Backend Service
+  # ----------------------------------------------------
+  backend:
+    # Build the image using the Dockerfile in the current directory
+    build: .
+    # Map the container port 8000 to the host port 8000
+    ports:
+      - "8000:8000"
+    # Environment variables (from host machine's .env file)
+    env_file:
+      - .env
+    # Make sure the backend waits for Ollama to be ready
+    depends_on:
+      ollama:
+        condition: service_healthy
+    # Mount the ChromaDB folder so the indexed data persists
+    volumes:
+      - chroma_data:/app/chroma_db
+      - .:/app # Mount all code for development/reindexing ease
+    # The command is defined in the Dockerfile, but can be overridden here
+    # command: python3 -m uvicorn backend.main:app --host 0.0.0.0 --port 8000
+  
+  # ----------------------------------------------------
+  # 3. Streamlit Frontend Service
+  # ----------------------------------------------------
+  frontend:
+    # Use the same built image
+    image: ${COMPOSE_PROJECT_NAME:-pycoach}_backend 
+    # Map container port 8501 to host port 8501
+    ports:
+      - "8501:8501"
+    # Ensure frontend only starts once backend is up
+    depends_on:
+      - backend
+    # This command overrides the FastAPI command in the image to run Streamlit
+    command: streamlit run frontend/app.py
+    # Streamlit also needs access to the local API
+    environment:
+      # This is crucial: the Streamlit app needs to access FastAPI via its service name
+      - API_BASE_URL=http://backend:8000/api/chat
+
+
+# Define persistent volumes
+volumes:
+  ollama_models:
+  chroma_data:
