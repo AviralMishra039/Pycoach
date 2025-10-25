@@ -11,18 +11,17 @@ services:
     # Mount volume for models to persist across restarts
     volumes:
       - ollama_models:/root/.ollama
-    #Use entrypoint to set the shell.
-    entrypoint: /bin/bash 
-    #  Use command to pass arguments to the shell (the actual commands).
-    command: -c "ollama pull llama3 && ollama serve"
+    
+    command: /bin/sh -c "ollama pull llama3 && ollama serve"
+    entrypoint: /bin/sh # Use a simple shell entrypoint
+    
+    
     healthcheck:
-      # Test that the ollama command runs and can list models (API is up)
-      test: ["CMD", "ollama", "list"] 
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 40s
-  
+      test: ["CMD", "sh", "-c", "wget --no-verbose --tries=1 --spider http://localhost:11434 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 40
   # ----------------------------------------------------
   # 2. FastAPI Backend Service (Builds the Base Application Image)
   # ----------------------------------------------------
