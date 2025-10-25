@@ -11,9 +11,10 @@ services:
     # Mount volume for models to persist across restarts
     volumes:
       - ollama_models:/root/.ollama
-    # Command to ensure Llama 3 is available on startup 
-    command: ["/bin/bash", "-c", "ollama pull llama3 && ollama serve"]
-    # Ensure this service starts first
+    #Use entrypoint to set the shell.
+    entrypoint: /bin/bash 
+    #  Use command to pass arguments to the shell (the actual commands).
+    command: -c "ollama pull llama3 && ollama serve"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:11434"]
       interval: 30s
