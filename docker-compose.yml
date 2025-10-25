@@ -13,7 +13,7 @@ services:
       - ollama_models:/root/.ollama
     
     command: >
-      sh -c "ollama pull llama3 && ollama serve"
+     /bin/bash -c "ollama pull llama3 && ollama serve"
     
     
     healthcheck:
