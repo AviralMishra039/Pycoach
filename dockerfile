@@ -13,6 +13,9 @@ COPY requirements.txt .
 # We must install the full requirements for RAG, FastAPI, and Streamlit
 RUN pip install --no-cache-dir -r requirements.txt
 
+RUN apt-get update && apt-get install -y netcat-openbsd \
+    && rm -rf /var/lib/apt/lists/*
+
 
 COPY . .
 
