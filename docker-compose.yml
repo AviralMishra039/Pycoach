@@ -16,10 +16,12 @@ services:
     #  Use command to pass arguments to the shell (the actual commands).
     command: -c "ollama pull llama3 && ollama serve"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:11434"]
+      # Test that the ollama command runs and can list models (API is up)
+      test: ["CMD", "ollama", "list"] 
       interval: 30s
       timeout: 10s
       retries: 5
+      start_period: 40s
   
   # ----------------------------------------------------
   # 2. FastAPI Backend Service (Builds the Base Application Image)
