@@ -12,12 +12,9 @@ services:
     volumes:
       - ollama_models:/root/.ollama
     
-    entrypoint: ["/bin/bash", "-c"]
-    
-    command: ["ollama pull llama3 && ollama serve"]
-    
+    command: ["/bin/sh", "-c", "ollama serve & ollama pull llama3"]
+  
     restart: unless-stopped
-    
     
     healthcheck:
       
