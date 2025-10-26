@@ -12,13 +12,7 @@ services:
     volumes:
       - ollama_models:/root/.ollama
     
-    command: >
-      /bin/sh -c "
-        if [ ! -d /root/.ollama/models/llama3 ]; then
-          ollama pull llama3
-        fi &&
-        exec ollama serve
-      "
+    restart: unless-stopped
     healthcheck:
       
       test: ["CMD-SHELL", "nc -z localhost 11434 || exit 1"]
