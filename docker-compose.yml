@@ -12,10 +12,9 @@ services:
     volumes:
       - ollama_models:/root/.ollama
     
-    command: ["/bin/sh", "-c", "ollama serve & ollama pull llama3"]
+    command: ollama serve & ollama pull llama3
   
     restart: unless-stopped
-    
     healthcheck:
       
       test: ["CMD-SHELL", "nc -z localhost 11434 || exit 1"]
