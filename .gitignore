@@ -22,3 +22,5 @@ Thumbs.db
 
 .vscode/
 *.swp
+
+project_with_ollama/
