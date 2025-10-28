@@ -1,25 +1,29 @@
-# Dockerfile
-
 # Use a lean Python base image
 FROM python:3.11-slim
 
 # Set the working directory inside the container
 WORKDIR /app
 
+# Copy and install ONLY the necessary system dependencies FIRST
+# We need libmagic-dev for filetype detection required by 'unstructured'
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        netcat-openbsd \
+        libmagic-dev && \
+    rm -rf /var/lib/apt/lists/*
+
+# Copy the Python requirements file
 COPY requirements.txt .
 
-# Install dependencies
-# Using --no-cache-dir saves space
-# We must install the full requirements for RAG, FastAPI, and Streamlit
+# Install Python dependencies
+# This will now successfully install 'unstructured[md]' (or similar) 
+# because the necessary system libraries are present.
 RUN pip install --no-cache-dir -r requirements.txt
 
-RUN apt-get update && apt-get install -y netcat-openbsd \
-    && rm -rf /var/lib/apt/lists/*
-
-
+# Copy the rest of the application code
 COPY . .
 
-
+# Create persistent directories (though volumes usually handle this)
 RUN mkdir -p /app/course_materials
 RUN mkdir -p /app/chroma_db
 
@@ -27,6 +31,5 @@ RUN mkdir -p /app/chroma_db
 EXPOSE 8000
 EXPOSE 8501
 
-
-# We will let docker-compose handle the commands, so use a simpler entry point:
+# Default command to run the FastAPI backend
 CMD ["python3", "-m", "uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]

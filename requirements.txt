@@ -19,6 +19,6 @@ transformers
 numpy<2,>=1.26.4       
 pydantic<2.0           
 typing-extensions    
-unstructured
+unstructured[md]
 
 
