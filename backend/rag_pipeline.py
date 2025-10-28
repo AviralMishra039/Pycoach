@@ -5,7 +5,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 from langchain_community.document_loaders import DirectoryLoader
-from langchain.text_splitters import RecursiveCharacterTextSplitter
+from langchain.text_splitter import RecursiveCharacterTextSplitter
 # --- Import LOCAL Embedding Library ---
 from langchain_community.embeddings import HuggingFaceBgeEmbeddings
 
