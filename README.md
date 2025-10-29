@@ -129,7 +129,7 @@ Embeddings: BAAI/bge-small-en-v1.5
 ---
 ## **Important Note on Local LLM (Ollama)**
 ### Due to frequent dependency conflicts and stability issues when running heavy local LLM services within a unified Docker Compose network Ollama has been removed from the primary docker-compose.yml file.
-### The local Ollama implementation mentioned previously  (or available in the main.py code in gitignore file) is for local demonstration only and is not configured for deployment or user consumption in the current Dockerized stack. Users must provide a valid GEMINI_API_KEY to run the project.
+### The local Ollama implementation mentioned previously   is for local demonstration only and is not configured for deployment or user consumption in the current Dockerized stack. Users must provide a valid GEMINI_API_KEY to run the project.
 
 
 ## Author: Aviral Mishra 
