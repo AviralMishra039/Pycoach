@@ -75,29 +75,38 @@ The entire system runs inside **Docker containers** — no manual dependency set
 	```bash
 	course_materials/
 	```
-	
+3. **Authentication** 
 
-3. **Build and Index the RAG Pipeline (MANDATORY)**
-
-	This step builds the Docker image and indexes your files into a persistent Docker volume (`chroma_data`).
-
+	 Create a file named .env in the root directory and add your Gemini API Key:	
 	```bash
-	docker compose run --rm backend python backend/	rag_pipeline.py
+	GEMINI_API_KEY="YOUR_API_KEY_HERE"
 	```
 
+4. **Build the Application Stack (Mandatory First Run)**
 
-4. **Launch the Full Application Stack**
-Start all three services (ollama, backend, frontend) in the background:
+	This builds the Docker images, installs all necessary RAG libraries (unstructured, libgl1, etc.), and starts the services.
 	```bash
-	docker compose up -d
+	docker compose up --build -d
+	```
+	(Wait for this process to complete before moving to Step 5).	
+5. **Build and Index the RAG Pipeline (MANDATORY)**
+
+	Since the vector database (chroma_data) starts empty, you must run the indexing script inside the running backend container once.
+
+	```bash
+	docker compose exec backend python backend/rag_pipeline.py
+	```
+	Then, restart the backend to load the newly created vector store:
+	```bash
+	docker compose restart backend
 	```
 
-5. **Access the Application**
+6. **Access the Application**
 Open your browser and navigate to:
 
 	 http://localhost:8501
 
-6. When Finished
+7. When Finished
 	Safely stop all services and free up resources:
 	```bash
 	docker compose down
@@ -118,8 +127,13 @@ Containerization: Docker & Docker Compose
 Embeddings: BAAI/bge-small-en-v1.5 
 
 ---
+## **Important Note on Local LLM (Ollama)**
+### Due to frequent dependency conflicts and stability issues when running heavy local LLM services within a unified Docker Compose network Ollama has been removed from the primary docker-compose.yml file.
+### The local Ollama implementation mentioned previously  (or available in the main.py code in gitignore file) is for local demonstration only and is not configured for deployment or user consumption in the current Dockerized stack. Users must provide a valid GEMINI_API_KEY to run the project.
+
+
 ## Author: Aviral Mishra 
 
 
 
-## License: MIT
+## License: [MIT](https://github.com/AviralMishra039/Pycoach/blob/main/LICENSE)
