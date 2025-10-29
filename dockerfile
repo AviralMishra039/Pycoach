@@ -9,7 +9,7 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         netcat-openbsd \
         libmagic-dev \
-        libgl1-mesa-glx \
+        libgl1 \
         tesseract-ocr \
         poppler-utils && \
     rm -rf /var/lib/apt/lists/*
