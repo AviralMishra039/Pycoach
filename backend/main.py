@@ -3,17 +3,19 @@
 import os
 import uvicorn
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_community.llms import Ollama # For Local LLM (Llama 3)
+from langchain_community.chat_models import ChatOllama
 from langchain.memory import ConversationSummaryBufferMemory
-from langchain_core.runnables import RunnablePassthrough
+from langchain_core.runnables import RunnablePassthrough, RunnableLambda
 from langchain.schema import SystemMessage
 from operator import itemgetter
 import time
 
-from .models import ChatRequest, ChatResponse
+from .models import ChatRequest, ChatResponse, StudentProfile
 from .adaptive_prompt_engine import get_adaptive_prompt
-from .db_manager import get_student_profile, save_student_profile # Keeping save_student_profile for completeness
+from .db_manager import get_student_profile, save_student_profile
 
 
 from langchain_community.embeddings import HuggingFaceBgeEmbeddings 
@@ -35,7 +37,6 @@ try:
     print("SUCCESS: RAG Retriever initialized using local Hugging Face embeddings.")
     
 except Exception as e:
-    # NOTE: Keep the RAG setup local even if the LLM is remote.
     print(f"FATAL RAG SETUP ERROR: Could not load ChromaDB. Ensure 'chroma_db' exists. Error: {e}")
     GLOBAL_RETRIEVER = None
 # Store memory by session (user_id).
@@ -43,24 +44,38 @@ SESSION_MEMORIES = {}
 # -----------------------------
 
 
-def get_llm_and_memory(user_id: str, api_key: str | None):
-    """Initializes the LLM (Gemini) and retrieves/creates the memory for the session."""
+def get_llm_and_memory(user_id: str, api_key: str | None, llm_source: str):
+    """Initializes the LLM and retrieves/creates the memory for the session."""
 
-    # --- LLM Selection Logic (Now fixed to Gemini) ---
-    if not api_key:
-        raise HTTPException(
-            status_code=401, 
-            detail="Gemini API Key is missing. Please set the GEMINI_API_KEY environment variable or pass a key."
+    llm = None
+    key_to_use = api_key 
+
+    # --- LLM Selection Logic ---
+    if llm_source.startswith("Gemini API"):
+        # Gemini Model (Cloud API)
+        if not key_to_use:
+            raise HTTPException(status_code=401, detail="Gemini API Key is missing. Please enter your personal key in the sidebar.")
+        
+        llm = ChatGoogleGenerativeAI(
+            model="gemini-2.5-flash", 
+            temperature=0.3, 
+            google_api_key=key_to_use,
+            convert_system_message_to_human=True
         )
     
-    # Gemini Model (Cloud API)
-    llm = ChatGoogleGenerativeAI(
-        model="gemini-2.5-flash", 
-        temperature=0.3, 
-        google_api_key=api_key,
-        convert_system_message_to_human=True
-    )
+    elif llm_source == "Local LLM (Requires Ollama)":
+        # Local Llama Model (Zero Cost, User-Hosted)
+        try:
+            llm = ChatOllama(model="llama3", temperature=0.3)
+            # Quick test to verify connectivity to the local server
+            llm.invoke("Hello.") 
+        except Exception as e:
+            raise HTTPException(status_code=503, 
+                detail=f"Local LLM Error (503): Ensure Ollama is running and 'llama3' is pulled (try: ollama run llama3).")
     
+    if llm is None:
+        raise HTTPException(status_code=400, detail="Invalid LLM source selected or configuration missing.")
+        
     # --- Memory Setup (Tier 3: Summary Buffer) ---
     if user_id not in SESSION_MEMORIES:
         
@@ -78,6 +93,7 @@ def get_llm_and_memory(user_id: str, api_key: str | None):
             "defined in the system prompt."
         )
         
+        
         memory.chat_memory.add_message(SystemMessage(content=initial_persona_message))
         
     return llm, SESSION_MEMORIES[user_id]
@@ -90,17 +106,10 @@ async def chat_endpoint(request: ChatRequest):
         
     # 1. Get LLM, Memory, and Profile
     start_time = time.time()
-    
-    # Retrieve the API key from the environment (best for Docker) or the request object
-    # Assuming key is available via .env/Docker environment variable first.
-    api_key_env = os.getenv("GEMINI_API_KEY") 
-    api_key = api_key_env if api_key_env else request.api_key
-    
     try:
-        # Note: We removed llm_source from the function call
-        llm, memory = get_llm_and_memory(request.user_id, api_key)
+        llm, memory = get_llm_and_memory(request.user_id, request.api_key, request.llm_source)
     except HTTPException:
-        # Re-raise explicit HTTP errors (like 401 missing key error)
+        # Re-raise explicit HTTP errors (like 503 Ollama error)
         raise 
 
     profile = get_student_profile(request.user_id)
@@ -126,11 +135,10 @@ async def chat_endpoint(request: ChatRequest):
         tutor_response = result.content
         
     except Exception as e:
-        # Catching LLM rate limiting (429) or other API/chain errors
+        # Catching  LLM rate limiting (429) or other API/chain errors
         error_msg = f"LLM Generation Failed. Error: {e}"
         if "429" in str(e) or "quota" in str(e).lower():
-            # Customize the error message since we are only using Gemini now
-            error_msg = "QUOTA EXCEEDED (429): The Gemini API usage limit was hit."
+            error_msg = f"QUOTA EXCEEDED (429): The {request.llm_source} limit was hit. Switch to the Local LLM option."
         raise HTTPException(status_code=503, detail=error_msg)
 
 
@@ -145,7 +153,7 @@ async def chat_endpoint(request: ChatRequest):
     # 5. Prepare and Return Final Response
     return ChatResponse(
         response=tutor_response,
-        
+       
         current_level=profile.current_level,
         source_documents=[] # Simplification: Omitted source document tracking for brevity
     )

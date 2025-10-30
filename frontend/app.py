@@ -1,27 +1,27 @@
 import streamlit as st
 import requests
 import os
+import pandas as pd
 from typing import Optional
 
 # --- Configuration ---
-# CRITICAL: Use the service name 'backend' when running in Docker Compose
-API_BASE_URL = "http://backend:8000/api/chat"
+API_BASE_URL = "http://127.0.0.1:8000/api/chat"
 USER_ID = "demo_user" 
-
-# Since we are removing the selector, we define the source as a constant
-GEMINI_LLM_SOURCE = "Gemini API (Cloud)"
 
 # --- UI Setup ---
 st.set_page_config(page_title="🧠 PyCoach: Adaptive Python Tutor", layout="wide")
 st.title("🧠 PyCoach: The Adaptive Python Tutor")
-st.markdown("A portfolio project demonstrating **RAG**, **Adaptive Prompting**, and **Level-Based Tutoring** using the **Gemini API**.")
+st.markdown("A portfolio project demonstrating **RAG**, **Adaptive Prompting**, and **Level-Based Tutoring**.")
 
 # --- Session State Initialization ---
 if 'history' not in st.session_state:
     st.session_state.history = []
 if 'profile' not in st.session_state:
-    # Initialize with a default level
+   
     st.session_state.profile = {"current_level": "Beginner"}
+if 'llm_source' not in st.session_state:
+    st.session_state.llm_source = "Gemini API (Personal Key)"
+
 if 'user_key_input' not in st.session_state: 
     st.session_state.user_key_input = ""
 
@@ -29,18 +29,20 @@ if 'user_key_input' not in st.session_state:
 
 
 # --- CORE API CALL LOGIC ---
-def call_backend_api(prompt: str, key: Optional[str], current_level: str):
-    """Calls the FastAPI backend with the message, key, and current adaptive level."""
+def call_backend_api(prompt: str, key: Optional[str], llm_source: str, current_level: str):
+    """Calls the FastAPI backend with the message, key, LLM choice, and current adaptive level."""
 
-    # The key is passed only if the user provides it in the sidebar. 
-    # If not provided, the backend attempts to use the GEMINI_API_KEY environment variable.
-    api_key_to_use = key if key else None
+    # 1. Determine which key to pass
+    api_key_to_use = None
+    if llm_source == "Gemini API (Personal Key)" and key:
+        api_key_to_use = key
     
     data = {
         "user_id": USER_ID,
         "message": prompt,
         "api_key": api_key_to_use, 
-        "llm_source": GEMINI_LLM_SOURCE, # Source is now fixed
+        "llm_source": llm_source,
+        #  PASSING THE CURRENT LEVEL FOR DB MANAGER 
         "current_level": current_level
     }
 
@@ -54,50 +56,60 @@ def call_backend_api(prompt: str, key: Optional[str], current_level: str):
 
         response_data = response.json()
         
-        # Update profile level based on backend response
+       
         st.session_state.profile['current_level'] = response_data.get("current_level", "N/A")
         
         return response_data.get("response", "Error: No response from tutor.")
 
     except requests.exceptions.HTTPError as e:
         error_detail = e.response.json().get("detail", "Unknown API Error.")
-        
-        # Update the error message to reflect Gemini as the only source
-        if "429" in error_detail or "quota" in error_detail.lower():
-            return f"❌ **QUOTA EXCEEDED (429)**: The Gemini API limit was reached. Please check your usage."
-        
-        if "API Key is missing" in error_detail:
-            return "❌ **Authentication Error**: Gemini API Key is missing. Please enter your personal key in the sidebar."
-            
+        if "quota" in error_detail.lower() or "429" in error_detail:
+             return f"❌ **QUOTA EXCEEDED (429)**: The API limit was reached. Please switch to the **Local LLM** option or enter your own **Gemini API Key** to continue."
         return f"❌ Backend HTTP Error ({e.response.status_code}): {error_detail}"
-        
     except requests.exceptions.ConnectionError:
-        # Update connection error message
-        return "❌ **Connection Error**: The FastAPI backend is not running at `http://backend:8000`. Please ensure you run `docker compose up --build`."
+        return "❌ **Connection Error**: The FastAPI backend is not running. Please ensure you run `docker compose up -d`."
     except Exception as e:
         return f"❌ An unexpected error occurred: {e}"
 
 
-# --- UI SIDEBAR: Control Panel & Dashboard ---
+# --- UI SIDEBAR: Control Panel & Dashboard  ---
 with st.sidebar:
-    st.header("⚙️ Gemini API Authentication")
+    st.header("⚙️ LLM Source & Authentication")
     
-    # 1. Key Input (Simplified to only Gemini key)
-    st.session_state.user_key_input = st.text_input(
-        "Enter your personal Gemini API Key:", 
-        type="password",
-        value=st.session_state.user_key_input 
+    # 1. Model Source Selector
+    llm_source_options = [
+        "Gemini API (Personal Key)",
+        "Local LLM (Requires Ollama)"
+    ]
+    st.session_state.llm_source = st.selectbox(
+        "Select LLM Source:",
+        llm_source_options,
+        index=llm_source_options.index(st.session_state.llm_source)
     )
-    custom_key = st.session_state.user_key_input 
 
-    if custom_key:
-        st.success(f"Key Loaded for {GEMINI_LLM_SOURCE}.")
-    else:
-        st.warning(f"Using environment variable key (if available). Enter a key to override.")
+    # 2. Key Input for Hybrid Approach (Using session_state)
+    custom_key = None
+    if st.session_state.llm_source == "Gemini API (Personal Key)":
+        st.session_state.user_key_input = st.text_input(
+            "Enter your personal Gemini API Key:", 
+            type="password",
+            value=st.session_state.user_key_input 
+        )
+        custom_key = st.session_state.user_key_input 
+
+        if custom_key:
+            st.success("Custom Key Loaded.")
+        else:
+            st.warning("Please enter your key for this mode.")
     
+    elif st.session_state.llm_source == "Local LLM (Requires Ollama)":
+        st.info("Ensure the Ollama server is running locally and 'llama3' is pulled (via `docker compose up`).")
+
+
     st.markdown("---")
     st.header("⚙️ Adaptive Level Control")
     
+   
     new_level = st.selectbox(
         "Manually Set Tutor Difficulty:",
         options=["Beginner", "Intermediate", "Expert"],
@@ -113,6 +125,7 @@ with st.sidebar:
     
     current_level = st.session_state.profile.get('current_level', 'Beginner')
     
+   
     st.subheader("Current Adaptive Pace")
     st.metric(label="Tutor Difficulty Level", value=current_level)
 
@@ -134,6 +147,7 @@ with st.sidebar:
     st.markdown("---")
     if st.button("🔄 Reset Session"):
         st.session_state.history = []
+        
         st.session_state.profile = {"current_level": "Beginner"} 
         st.session_state.user_key_input = "" 
         st.rerun()
@@ -153,10 +167,11 @@ if prompt := st.chat_input("Ask a Python question (e.g., 'What is a list compreh
 
     # Get response from backend
     current_level = st.session_state.profile.get('current_level', 'Beginner')
+    key_to_pass = custom_key if st.session_state.llm_source == "Gemini API (Personal Key)" else None
     
-    with st.spinner(f"PyCoach is using {GEMINI_LLM_SOURCE} to think..."):
-        # The llm_source parameter is implicitly passed by the fixed value in the function definition
-        tutor_response = call_backend_api(prompt, custom_key, current_level)
+    with st.spinner(f"PyCoach is using {st.session_state.llm_source} to think..."):
+        #  Pass the current level to the backend API call 
+        tutor_response = call_backend_api(prompt, key_to_pass, st.session_state.llm_source, current_level)
 
     # Display tutor response
     st.session_state.history.append({"role": "assistant", "content": tutor_response})
