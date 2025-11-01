@@ -1,32 +1,36 @@
-# -----------------------------
-#   PYCOACH BACKEND (FastAPI)
-# -----------------------------
-FROM python:3.11-slim
+# ---------- 1. Use official Python image ----------
+FROM python:3.11-slim AS backend
 
-# Set working directory
+# ---------- 2. Set working directory ----------
 WORKDIR /app
 
-# Install system deps
-RUN apt-get update && apt-get install -y \
-    git curl && \
-    rm -rf /var/lib/apt/lists/*
+# ---------- 3. Copy dependency list ----------
+COPY backend/requirements.txt /app/backend/requirements.txt
 
-# Copy requirements and install
-COPY requirements.txt /app/requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
+# ---------- 4. Install system dependencies ----------
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
 
-# Copy backend code
+# ---------- 5. Install Python dependencies ----------
+RUN pip install --no-cache-dir -r backend/requirements.txt
+
+# ---------- 6. Copy the backend code ----------
 COPY backend /app/backend
 COPY course_materials /app/course_materials
 
+# ---------- 7. Copy prebuilt ChromaDB (optional local volume) ----------
+# If you have a pre-generated chroma_db folder locally, uncomment next line
+# COPY chroma_db /app/chroma_db
 
-# Expose FastAPI port
+# Otherwise, Chroma will initialize a new one automatically on first run.
+
+# ---------- 8. Expose FastAPI port ----------
 EXPOSE 8000
 
-# Set environment variables
-ENV PYTHONUNBUFFERED=1
-ENV LANG=C.UTF-8
-ENV LC_ALL=C.UTF-8
+# ---------- 9. Set environment variables ----------
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
 
-# Start FastAPI app
+# ---------- 10. Run FastAPI ----------
 CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
