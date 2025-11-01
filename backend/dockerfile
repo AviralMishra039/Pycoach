@@ -18,7 +18,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy backend code
 COPY backend /app/backend
 COPY course_materials /app/course_materials
-COPY chroma_db /app/chroma_db
+
 
 # Expose FastAPI port
 EXPOSE 8000
