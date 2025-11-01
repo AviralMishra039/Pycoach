@@ -4,7 +4,8 @@ chromadb==0.5.3
 
 langchain==0.1.14
 langchain-core==0.1.47
-langchain-community==0.0.29
+langchain-community>=0.0.30,<0.1
+
 langchain-google-genai==0.0.9
 
 pydantic==2.7.1
