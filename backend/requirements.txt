@@ -1,7 +1,7 @@
 fastapi
 uvicorn
 chromadb
-langchain
+langchain==0.1.0
 langchain-core
 langchain-community
 langchain-google-genai
@@ -10,3 +10,4 @@ python-dotenv
 huggingface-hub
 sentence-transformers
 tiktoken
+numpy>=1.26.4,<2.0
