@@ -1,0 +1,18 @@
+# Ignore local environment files and caches
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
+*.db
+*.sqlite3
+*.egg-info/
+.env
+venv/
+.env/
+.idea/
+.vscode/
+
+# Ignore model weights and large embeddings (they’re mounted)
+chroma_db/
+.gitignore/
