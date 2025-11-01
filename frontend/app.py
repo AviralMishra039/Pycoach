@@ -9,8 +9,8 @@ API_BASE_URL = "http://127.0.0.1:8000/api/chat"
 USER_ID = "demo_user" 
 
 # --- UI Setup ---
-st.set_page_config(page_title="🧠 PyCoach: Adaptive Python Tutor", layout="wide")
-st.title("🧠 PyCoach: The Adaptive Python Tutor")
+st.set_page_config(page_title=" PyCoach: Adaptive Python Tutor", layout="wide")
+st.title(" PyCoach: The Adaptive Python Tutor")
 st.markdown("A portfolio project demonstrating **RAG**, **Adaptive Prompting**, and **Level-Based Tutoring**.")
 
 # --- Session State Initialization ---
