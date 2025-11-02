@@ -7,8 +7,9 @@ from typing import Optional
 # -----------------------------
 # CONFIGURATION
 # -----------------------------
-API_BASE_URL = os.getenv("API_BASE_URL", "http://backend:8000/api/chat")  
-USER_ID = os.getenv("USER_ID", "demo_user")  
+# NOTE: Using a default URL that works for local/docker-compose environments
+API_BASE_URL = os.getenv("API_BASE_URL", "http://backend:8000/api/chat")  
+USER_ID = os.getenv("USER_ID", "demo_user")  
 
 st.set_page_config(page_title="PyCoach: Adaptive Python Tutor", layout="wide")
 
@@ -17,7 +18,7 @@ st.set_page_config(page_title="PyCoach: Adaptive Python Tutor", layout="wide")
 # -----------------------------
 st.title("🧠 PyCoach: The Adaptive Python Tutor")
 st.markdown("""
-A portfolio project demonstrating **RAG**, **Adaptive Prompting**, and **Level-Based Tutoring**  
+A portfolio project demonstrating **RAG**, **Adaptive Prompting**, and **Level-Based Tutoring**  
 Built using **FastAPI + Streamlit + Gemini API**.
 """)
 
@@ -42,7 +43,7 @@ def call_backend_api(prompt: str, api_key: Optional[str], current_level: str):
         "user_id": USER_ID,
         "message": prompt,
         "api_key": api_key,
-        "llm_source": "Gemini API (Personal Key)",
+        # REMOVED: The 'llm_source' field is no longer necessary as the backend is Gemini-only.
         "current_level": current_level
     }
 
@@ -60,7 +61,8 @@ def call_backend_api(prompt: str, api_key: Optional[str], current_level: str):
     except requests.exceptions.Timeout:
         return "⏳ **Timeout:** The backend took too long to respond."
     except requests.exceptions.RequestException as e:
-        return f"❌ **HTTP Error:** {str(e)}"
+        # NOTE: Updated the error message to be more explicit about API errors
+        return f"❌ **HTTP Error:** Check your API Key or backend logs. Details: {str(e)}" 
     except Exception as e:
         return f"⚠️ Unexpected error: {str(e)}"
 
@@ -87,6 +89,7 @@ with st.sidebar:
 
     # Adaptive Level Control
     current_level = st.session_state.profile.get("current_level", "Beginner")
+   
     new_level = st.selectbox(
         "Set Tutor Difficulty:",
         ["Beginner", "Intermediate", "Expert"],
