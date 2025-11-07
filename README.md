@@ -39,7 +39,7 @@ PyCoach is organized into **three containerized services**, managed by `docker-c
 | **frontend** | Streamlit user interface managing session state, secure API key input, chat interface, and adaptive level selector. | Streamlit, Pandas (for data visualization) |
 | **ollama** | External service providing Llama 3 for the zero-cost option. | Ollama, Llama 3 |
 
-![ollama](images/ollama_snippet.png)
+![ollama](images/llama_snippet.png)
 
 ---
 
