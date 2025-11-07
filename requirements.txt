@@ -19,10 +19,3 @@ torch
 transformers
 numpy>=1.26.4,<2.0
 pydantic<2.0
-typing-extensions
-unstructured[md]
-unstructured[pdf]
-
-# --- Optional Stability & Utility ---
-tqdm
-tenacity
