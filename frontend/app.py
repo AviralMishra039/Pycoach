@@ -103,7 +103,7 @@ with st.sidebar:
             st.warning("Please enter your key for this mode.")
     
     elif st.session_state.llm_source == "Local LLM (Requires Ollama)":
-        st.info("Ensure the Ollama server is running locally and 'llama3' is pulled (via `docker compose up`).")
+        st.info("Ensure the Ollama server is running locally.")
 
 
     st.markdown("---")

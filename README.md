@@ -8,6 +8,8 @@ This project showcases robust **LangChain Expression Language (LCEL)** chains, *
 ---
 
 ## Core Innovations & Technology Stack
+![Gemini](images/gemini_snippet.png)
+
 
 | **Feature** | **Concept Implemented** | **Why It Was Used (Value Proposition)** |
 |--------------|--------------------------|-----------------------------------------|
@@ -36,6 +38,8 @@ PyCoach is organized into **three containerized services**, managed by `docker-c
 | **backend** | FastAPI application coordinating RAG and Adaptive Logic. Handles `ChatRequest`, loads appropriate LLM, builds LCEL chain, and manages conversational history. | FastAPI, Uvicorn, LangChain (0.1.0), ChromaDB, ChatGoogleGenerativeAI, ChatOllama |
 | **frontend** | Streamlit user interface managing session state, secure API key input, chat interface, and adaptive level selector. | Streamlit, Pandas (for data visualization) |
 | **ollama** | External service providing Llama 3 for the zero-cost option. | Ollama, Llama 3 |
+
+![ollama](images/ollama_snippet.png)
 
 ---
 
